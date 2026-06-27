@@ -15,7 +15,3 @@ target/
 # SO
 .DS_Store
 Thumbs.db
-
-# Documentos internos (não fazem parte da entrega)
-/PLANEJAMENTO.md
-/help.md
