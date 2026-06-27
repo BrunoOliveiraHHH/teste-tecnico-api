@@ -1,0 +1,11 @@
+# Normaliza fim de linha: LF no repositório
+* text=auto
+
+# Scripts que exigem LF
+mvnw       text eol=lf
+*.sh       text eol=lf
+
+# Scripts Windows exigem CRLF
+mvnw.cmd   text eol=crlf
+*.cmd      text eol=crlf
+*.bat      text eol=crlf

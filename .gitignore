@@ -1,0 +1,21 @@
+# Build
+target/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Logs
+*.log
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Documentos internos (não fazem parte da entrega)
+/PLANEJAMENTO.md
+/help.md
