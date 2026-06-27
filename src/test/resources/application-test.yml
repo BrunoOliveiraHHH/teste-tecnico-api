@@ -1,0 +1,14 @@
+# Perfil de testes: banco H2 em memória (sem Docker, sem Postgres).
+# O schema é gerado pelo Hibernate a partir das entidades; o Flyway fica
+# desativado (as migrations são específicas de PostgreSQL).
+spring:
+  datasource:
+    url: jdbc:h2:mem:tarifa_agua;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
