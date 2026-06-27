@@ -45,8 +45,8 @@ mvn spring-boot:run                                     # 2. aplicação
 ```
 
 A API fica em `http://localhost:8080`. Na primeira inicialização, o Flyway cria
-o schema e insere uma tabela de exemplo (seed) que já reproduz o caso
-INDUSTRIAL 18 m³ = R$ 26,00.
+o schema e insere um conjunto de dados de exemplo (várias tabelas e categorias,
+com a tabela vigente "Geral 2027").
 
 ## Regras de negócio
 
@@ -56,11 +56,14 @@ fim`; sem sobreposição; sem lacunas (cada faixa começa logo após a anterior)
 **Cálculo progressivo:** o consumo em cada faixa é multiplicado pelo valor
 unitário daquela faixa, e os subtotais são somados.
 
+Exemplo com a tabela vigente do seed (Geral 2027), categoria INDUSTRIAL,
+consumo de **20 m³**:
+
 | Faixa | m³ cobrados | Valor unitário | Subtotal |
 |-------|-------------|----------------|----------|
-| 0–10 | 10 | R$ 1,00 | R$ 10,00 |
-| 11–20 | 8 | R$ 2,00 | R$ 16,00 |
-| **Total (18 m³)** | | | **R$ 26,00** |
+| 0–10 | 10 | R$ 1,50 | R$ 15,00 |
+| 11–30 | 10 | R$ 2,50 | R$ 25,00 |
+| **Total (20 m³)** | | | **R$ 40,00** |
 
 ## Endpoints
 
@@ -70,16 +73,16 @@ unitário daquela faixa, e os subtotais são somados.
 
 ```json
 {
-  "nome": "Tabela Tarifária 2026",
-  "dataVigencia": "2026-01-01",
+  "nome": "Tabela Tarifária 2028",
+  "dataVigencia": "2028-01-01",
   "categorias": [
     {
       "categoria": "INDUSTRIAL",
       "faixas": [
-        { "inicio": 0,  "fim": 10,    "valorUnitario": 1.00 },
-        { "inicio": 11, "fim": 20,    "valorUnitario": 2.00 },
-        { "inicio": 21, "fim": 30,    "valorUnitario": 3.00 },
-        { "inicio": 31, "fim": 99999, "valorUnitario": 4.00 }
+        { "inicio": 0,  "fim": 10,    "valorUnitario": 1.50 },
+        { "inicio": 11, "fim": 30,    "valorUnitario": 2.50 },
+        { "inicio": 31, "fim": 60,    "valorUnitario": 3.50 },
+        { "inicio": 61, "fim": 99999, "valorUnitario": 4.50 }
       ]
     }
   ]
@@ -103,19 +106,19 @@ listagem e não é mais usada em cálculos. Id inexistente → `404 Not Found`.
 **Request:**
 
 ```json
-{ "categoria": "INDUSTRIAL", "consumo": 18 }
+{ "categoria": "INDUSTRIAL", "consumo": 20 }
 ```
 
-**Response `200 OK`:**
+**Response `200 OK`** (usando a tabela vigente do seed, Geral 2027):
 
 ```json
 {
   "categoria": "INDUSTRIAL",
-  "consumoTotal": 18,
-  "valorTotal": 26.00,
+  "consumoTotal": 20,
+  "valorTotal": 40.00,
   "detalhamento": [
-    { "faixa": { "inicio": 0, "fim": 10 }, "m3Cobrados": 10, "valorUnitario": 1.00, "subtotal": 10.00 },
-    { "faixa": { "inicio": 11, "fim": 20 }, "m3Cobrados": 8, "valorUnitario": 2.00, "subtotal": 16.00 }
+    { "faixa": { "inicio": 0, "fim": 10 }, "m3Cobrados": 10, "valorUnitario": 1.50, "subtotal": 15.00 },
+    { "faixa": { "inicio": 11, "fim": 30 }, "m3Cobrados": 10, "valorUnitario": 2.50, "subtotal": 25.00 }
   ]
 }
 ```
@@ -132,13 +135,13 @@ Formato padronizado (`timestamp`, `status`, `erro`, `mensagem`, `detalhes`):
 
 ## Demonstração da parametrização
 
-1. Calcule `INDUSTRIAL` / `18` → **R$ 26,00**.
-2. Altere no banco o valor da faixa `0–10`:
+1. Calcule `INDUSTRIAL` / `20` → **R$ 40,00** (tabela vigente, Geral 2027).
+2. Altere no banco o valor da faixa `0–10` da tabela vigente (id 3):
    ```sql
-   UPDATE faixa_consumo SET valor_unitario = 2.00
-   WHERE categoria = 'INDUSTRIAL' AND inicio = 0;
+   UPDATE faixa_consumo SET valor_unitario = 2.50
+   WHERE tabela_id = 3 AND categoria = 'INDUSTRIAL' AND inicio = 0;
    ```
-3. Calcule de novo → **R$ 36,00** (10×2,00 + 8×2,00). Sem alterar código.
+3. Calcule de novo → **R$ 50,00** (10×2,50 + 10×2,50). Sem alterar código.
 
 ## Como testar
 
@@ -155,6 +158,8 @@ qualquer cliente HTTP.
 Versionados pelo **Flyway**, em `src/main/resources/db/migration`:
 
 - `V1__create_schema.sql` — criação das tabelas, constraints e índices.
-- `V2__seed_dados_exemplo.sql` — dados de exemplo (seed) com as quatro categorias.
+- `V2__seed_dados_exemplo.sql` — seed de exemplo **massivo e variado**: 3 tabelas
+  ativas com vigências diferentes (a vigente é a "Geral 2027") e 1 tabela
+  histórica inativa, cada uma com as 4 categorias e várias faixas.
 
 As migrations são aplicadas automaticamente na inicialização.
